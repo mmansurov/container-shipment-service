@@ -32,7 +32,7 @@ class Config {
 
             actionRepository.saveAll(listOf(action1, action2, action3, action4))
 
-            val defaultPlanTemplate = PlanTemplate(id = 999, name = "General Shipment Template", actions = listOf(action1, action2, action3, action4), temperatureRange = temperatureRange)
+            val defaultPlanTemplate = PlanTemplate(id = 999, name = "General Shipment Template", actions = mutableListOf(action1, action2, action3, action4))
 
             templateRepository.save(defaultPlanTemplate)
             templateRepository.findAll().forEach(::print)
