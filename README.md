@@ -10,11 +10,10 @@ The task's requirement to create execution plans automatically when receiving sh
 For this full-stack implementation, a different approach was chosen:
 - Execution plans are created through the frontend interface
 - This aligns better with full-stack requirements where user interaction is expected
-- The automatic creation from RabbitMQ messages was assumed to be a backend-only candidate's requirement
 
 ## Quick Start
 
-The project uses Maven's frontend-maven-plugin (com.github.eirslett) to automatically build and start the frontend along with the backend.  
+The project uses Maven's frontend-maven-plugin `com.github.eirslett` to automatically build and start the frontend along with the backend.  
 To start the entire application, simply run:
 
 ```bash
@@ -30,7 +29,6 @@ The application will be available at:
 
 ## TODO Improvements
 
-### Backend
 - Add integration tests for:
   - REST Controllers, including @ExceptionHandlers logic
   - RabbitMQ Listener
