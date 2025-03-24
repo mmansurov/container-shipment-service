@@ -1,22 +1,27 @@
-import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { BrowserModule } from '@angular/platform-browser';
+import { HttpClientModule } from '@angular/common/http';
+import { ReactiveFormsModule } from '@angular/forms';
+
 import { AppComponent } from './app.component';
-import { ExecutionPlanModelComponent } from './components/execution-plan-model/execution-plan-model.component';
-import {ShipmentService} from "./services/shipment.service";
-import { ExecutionPlanComponentComponent } from './components/execution-plan/execution-plan-component.component';
+import { ShipmentListComponent } from './components/shipment-list/shipment-list.component';
+import { ExecutionPlanModalComponent } from './components/execution-plan-modal/execution-plan-modal.component';
+import { ExecutionPlanComponent } from './components/execution-plan/execution-plan.component';
 
 @NgModule({
   declarations: [
     AppComponent,
-    ExecutionPlanModelComponent,
-    ExecutionPlanComponentComponent
+    ShipmentListComponent,
+    ExecutionPlanModalComponent,
+    ExecutionPlanComponent
   ],
   imports: [
     BrowserModule,
-    FormsModule
+    HttpClientModule,
+    ReactiveFormsModule
   ],
-  providers: [ShipmentService],
+  providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {
+}

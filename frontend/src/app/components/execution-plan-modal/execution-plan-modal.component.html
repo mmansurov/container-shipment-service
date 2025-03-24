@@ -1,0 +1,56 @@
+<div class="modal" (click)="onClose()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Create Execution Plan</h5>
+        <button type="button" class="btn-close" (click)="onClose()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <form [formGroup]="planForm">
+          <div class="form-group mb-4">
+            <label for="templateSelect" class="form-label">Select Template</label>
+            <select 
+              id="templateSelect"
+              class="form-select" 
+              formControlName="templateId">
+              <option value="">Choose a template...</option>
+              <ng-container *ngIf="templates$ | async as templates">
+                <option *ngFor="let template of templates" [value]="template.id">
+                  {{ template.name }}
+                </option>
+              </ng-container>
+            </select>
+            <div *ngIf="planForm.get('templateId')?.touched && planForm.get('templateId')?.errors?.['required']" 
+                 class="text-danger mt-1">
+              Please select a template
+            </div>
+          </div>
+
+          <div class="selected-shipments">
+            <h6>Selected Shipments ({{ selectedShipments.length }})</h6>
+            <ul class="list-group">
+              <li *ngFor="let shipment of selectedShipments" class="list-group-item">
+                <strong>#{{ shipment.id }}</strong> - {{ shipment.origin }} to {{ shipment.destination }}
+              </li>
+            </ul>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" 
+                class="btn btn-secondary" 
+                (click)="onClose()">
+          Cancel
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                [disabled]="!planForm.valid || selectedShipments.length === 0"
+                (click)="createExecutionPlan()">
+          Create Plan
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
