@@ -37,11 +37,8 @@ class ShipmentListener(private val shipmentService: ShipmentService) {
         logger.info("Received shipment message: $message")
         
         try {
-            // Validate required fields
-            if (message.origin.isNullOrBlank() || message.destination.isNullOrBlank() || message.customerId.isNullOrBlank()) {
-                throw InvalidShipmentDataException("Required fields (origin, destination, customerId) cannot be null or empty")
-            }
-            
+            // TODO: Validate message
+
             val shipment = Shipment(
                 id = message.shipmentId,
                 origin = message.origin,
