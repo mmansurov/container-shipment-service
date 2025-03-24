@@ -11,13 +11,42 @@ services:
       - "5672:5672"
       - "15672:15672"
 
-
   rabbitmq-publisher:
-    image: rabbitmq-publisher  #HINT: to build this docker image, use the Dockerfile which exists in the following folder /docker/rabbitmq-publisher/Dockerfile
+    image: rabbitmq-publisher
     environment:
       RABBITMQ_HOST: rabbitmq
       PUBLISH_FREQUENCY: 5
+    depends_on:
+      - rabbitmq
 
-  # Run the backend as docker here
-  #backend:
-  #.......
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: shipmentdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/shipmentdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: kn
+      SPRING_RABBITMQ_PASSWORD: kn
+    depends_on:
+      - rabbitmq
+      - rabbitmq-publisher
+      - postgres
+
+volumes:
+  postgres_data:
