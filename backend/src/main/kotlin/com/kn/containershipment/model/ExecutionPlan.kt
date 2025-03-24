@@ -41,10 +41,6 @@ data class ExecutionPlanAction(
     val actionId: Long = 0,
     val actionName: String? = null,
 
-    // Execution status
     val isExecuted: Boolean = false,
     val isNotify: Boolean = false,
-
-    // Audit fields
-    val createdAt: Long = System.currentTimeMillis()
 )
