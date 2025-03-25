@@ -12,7 +12,7 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class ShipmentListComponent implements OnInit {
     private selectedShipmentsSubject = new BehaviorSubject<Shipment[]>([]);
-    readonly shipments$ = this.shipmentService.shipments$;
+    readonly shipmentsState$ = this.shipmentService.shipmentsState$;
     readonly selectedShipments$ = this.selectedShipmentsSubject.asObservable();
     showExecutionPlanModal = false;
 

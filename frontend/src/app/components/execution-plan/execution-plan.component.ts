@@ -7,7 +7,7 @@ import { ExecutionPlanService } from '../../services/execution-plan.service';
   styleUrls: ['./execution-plan.component.scss']
 })
 export class ExecutionPlanComponent {
-  executionPlans$ = this.executionPlanService.executionPlans$;
+  executionPlansState$ = this.executionPlanService.executionPlansState$;
 
   constructor(private executionPlanService: ExecutionPlanService) {
   }

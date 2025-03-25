@@ -32,7 +32,7 @@ describe('ShipmentService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should fetch shipments on initialization', async () => {
+  it('should fetch shipments and update state on initialization', async () => {
     // Given
     const mockShipments: Shipment[] = [
       {
@@ -56,54 +56,27 @@ describe('ShipmentService', () => {
     ];
 
     // When
-    const shipmentsPromise = firstValueFrom(service.shipments$);
+    const initialState = await firstValueFrom(service.shipmentsState$);
+    expect(initialState.loading).toBe(true);
+    expect(initialState.data).toEqual([]);
 
     // Then
     const req = httpMock.expectOne(`${environment.apiUrl}/shipments`);
     expect(req.request.method).toBe('GET');
     req.flush(mockShipments);
 
-    const receivedShipments = await shipmentsPromise;
-    expect(receivedShipments).toEqual(mockShipments);
+    const loadedState = await firstValueFrom(service.shipmentsState$);
+    expect(loadedState.loading).toBe(false);
+    expect(loadedState.data).toEqual(mockShipments);
   });
 
-  it('should fetch shipments when getAllShipments is called', async () => {
-    // Given
-    const mockShipments: Shipment[] = [
-      {
-        id: 3,
-        origin: 'New York',
-        destination: 'London',
-        transportType: TransportType.AIR,
-        createdDate: Date.now(),
-        notifyCustomer: true,
-        fragile: true
-      },
-      {
-        id: 4,
-        origin: 'Singapore',
-        destination: 'Tokyo',
-        transportType: TransportType.SEA,
-        createdDate: Date.now(),
-        notifyCustomer: false,
-        fragile: false
-      }
-    ];
-
+  it('should handle empty response', async () => {
     // Handle the initial HTTP request from constructor
-    const initialReq = httpMock.expectOne(`${environment.apiUrl}/shipments`);
-    initialReq.flush([]);
-
-    // When
-    const shipmentsPromise = firstValueFrom(service.shipments$);
-    service.getAllShipments();
-
-    // Then
     const req = httpMock.expectOne(`${environment.apiUrl}/shipments`);
-    expect(req.request.method).toBe('GET');
-    req.flush(mockShipments);
+    req.flush([]);
 
-    const receivedShipments = await shipmentsPromise;
-    expect(receivedShipments).toEqual(mockShipments);
+    const state = await firstValueFrom(service.shipmentsState$);
+    expect(state.loading).toBe(false);
+    expect(state.data).toEqual([]);
   });
 });

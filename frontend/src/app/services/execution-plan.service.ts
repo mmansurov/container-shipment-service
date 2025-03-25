@@ -1,17 +1,18 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { ExecutionPlan } from '../models/execution-plan.model';
 import { environment } from '../../environments/environment';
+import { LoadingState } from '../models/loading-state.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ExecutionPlanService {
   private apiUrl = `${environment.apiUrl}/execution-plans`;
-  private executionPlansSubject = new Subject<ExecutionPlan[]>();
-  executionPlans$ = this.executionPlansSubject.asObservable();
+  private executionPlansSubject = new BehaviorSubject<LoadingState<ExecutionPlan>>({ data: [], loading: true });
+  executionPlansState$: Observable<LoadingState<ExecutionPlan>> = this.executionPlansSubject.asObservable();
 
   constructor(private http: HttpClient) {
     this.loadExecutionPlans();
@@ -19,7 +20,7 @@ export class ExecutionPlanService {
 
   loadExecutionPlans() {
     this.http.get<ExecutionPlan[]>(this.apiUrl).subscribe(
-      plans => this.executionPlansSubject.next(plans)
+      plans => this.executionPlansSubject.next({ data: plans, loading: false }),
     );
   }
 
