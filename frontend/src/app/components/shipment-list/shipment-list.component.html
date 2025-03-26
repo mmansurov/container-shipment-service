@@ -67,8 +67,9 @@
 </div>
 
 <app-execution-plan-modal
-    *ngIf="showExecutionPlanModal"
+    *ngIf="showExecutionPlanModal$ | async"
     [selectedShipments]="selectedShipments$ | async"
+    [buttonDisabled]="isCreating$ | async"
     (close)="closeExecutionPlanModal()"
-    (planCreated)="onPlanCreated()">
+    (createPlanRequested)="onCreatePlanRequested($event)">
 </app-execution-plan-modal>

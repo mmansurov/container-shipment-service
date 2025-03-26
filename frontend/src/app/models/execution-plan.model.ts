@@ -8,3 +8,8 @@ export interface ExecutionPlan {
   transportType: TransportType;
   fragile: boolean;
 }
+
+export interface CreateExecutionPlanRequest {
+  shipmentIds: number[];
+  templateId: number;
+}

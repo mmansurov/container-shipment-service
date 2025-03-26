@@ -1,8 +1,10 @@
-import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { ShipmentService } from '../../services/shipment.service';
 import { Shipment } from '../../models/shipment.model';
 import { TransportType } from '../../models/transport-type.model';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, map, takeUntil, Subject } from 'rxjs';
+import { CreateExecutionPlanRequest } from '../../models/execution-plan.model';
+import { ExecutionPlanService } from '../../services/execution-plan.service';
 
 @Component({
     selector: 'app-shipment-list',
@@ -10,18 +12,39 @@ import { BehaviorSubject } from 'rxjs';
     styleUrls: ['./shipment-list.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ShipmentListComponent implements OnInit {
+export class ShipmentListComponent implements OnInit, OnDestroy {
     private selectedShipmentsSubject = new BehaviorSubject<Shipment[]>([]);
+    private isCreatingSubject = new BehaviorSubject<boolean>(false);
+    private showModalSubject = new BehaviorSubject<boolean>(false);
+    private destroy$ = new Subject<void>();
+
     readonly shipmentsState$ = this.shipmentService.shipmentsState$;
-    readonly selectedShipments$ = this.selectedShipmentsSubject.asObservable();
-    showExecutionPlanModal = false;
+    readonly selectedShipments$ = this.selectedShipmentsSubject.asObservable().pipe(
+        map(shipments => shipments || [])
+    );
+    readonly isCreating$ = this.isCreatingSubject.asObservable();
+    readonly showExecutionPlanModal$ = this.showModalSubject.asObservable();
 
     constructor(
         private readonly shipmentService: ShipmentService,
+        private readonly executionPlanService: ExecutionPlanService
     ) {}
 
     ngOnInit(): void {
         this.loadShipments();
+        this.executionPlanService.planCreated$.pipe(
+            takeUntil(this.destroy$)
+        ).subscribe({
+            next: () => {
+                this.isCreatingSubject.next(false);
+                this.showModalSubject.next(false);
+                this.selectedShipmentsSubject.next([]);
+                this.executionPlanService.loadExecutionPlans();
+            },
+            error: () => {
+                this.isCreatingSubject.next(false);
+            }
+        });
     }
 
     loadShipments(): void {
@@ -45,15 +68,18 @@ export class ShipmentListComponent implements OnInit {
     }
 
     openExecutionPlanModal(): void {
-        this.showExecutionPlanModal = true;
+        if (this.selectedShipmentsSubject.value.length > 0) {
+            this.showModalSubject.next(true);
+        }
     }
 
     closeExecutionPlanModal(): void {
-        this.showExecutionPlanModal = false;
+        this.showModalSubject.next(false);
     }
 
-    onPlanCreated(): void {
-        this.selectedShipmentsSubject.next([]);
+    onCreatePlanRequested(request: CreateExecutionPlanRequest): void {
+        this.isCreatingSubject.next(true);
+        this.executionPlanService.createExecutionPlan(request);
     }
 
     getTransportTypeIcon(type: TransportType): string {
@@ -67,5 +93,10 @@ export class ShipmentListComponent implements OnInit {
             default:
                 return '';
         }
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 }

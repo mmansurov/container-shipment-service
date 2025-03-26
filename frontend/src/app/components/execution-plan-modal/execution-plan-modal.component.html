@@ -46,9 +46,15 @@
         </button>
         <button type="button" 
                 class="btn btn-primary" 
-                [disabled]="!planForm.valid || selectedShipments.length === 0"
+                [disabled]="!planForm.valid || selectedShipments.length === 0 || buttonDisabled"
                 (click)="createExecutionPlan()">
-          Create Plan
+          <ng-container *ngIf="buttonDisabled; else createPlanText">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Loading...
+          </ng-container>
+          <ng-template #createPlanText>
+            Create Plan
+          </ng-template>
         </button>
       </div>
     </div>

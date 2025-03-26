@@ -1,59 +1,41 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ReactiveFormsModule } from '@angular/forms';
+import { of } from 'rxjs';
 import { ExecutionPlanModalComponent } from './execution-plan-modal.component';
 import { TemplateService } from '../../services/template.service';
-import { ExecutionPlanService } from '../../services/execution-plan.service';
-import { of } from 'rxjs';
 import { Shipment } from '../../models/shipment.model';
-import { TransportType } from '../../models/transport-type.model';
-import { firstValueFrom } from 'rxjs';
+import { Template } from '../../models/template.model';
+import { By } from '@angular/platform-browser';
 
 describe('ExecutionPlanModalComponent', () => {
   let component: ExecutionPlanModalComponent;
   let fixture: ComponentFixture<ExecutionPlanModalComponent>;
   let templateService: jasmine.SpyObj<TemplateService>;
-  let executionPlanService: jasmine.SpyObj<ExecutionPlanService>;
 
-  const mockTemplates = [
+  const mockTemplates: Template[] = [
     { id: 1, name: 'Template 1' },
     { id: 2, name: 'Template 2' }
   ];
 
   const mockShipments: Shipment[] = [
-    {
-      id: 1,
-      origin: 'Hamburg',
-      destination: 'Rotterdam',
-      transportType: TransportType.SEA,
-      createdDate: Date.now(),
-      notifyCustomer: true,
-      fragile: false
-    }
+    { id: 1, origin: 'A', destination: 'B' } as Shipment,
+    { id: 2, origin: 'C', destination: 'D' } as Shipment
   ];
 
   beforeEach(async () => {
-    const templateServiceSpy = jasmine.createSpyObj('TemplateService', ['getAllTemplates'], {
+    templateService = jasmine.createSpyObj('TemplateService', [], {
       templates$: of(mockTemplates)
     });
-    const executionPlanServiceSpy = jasmine.createSpyObj('ExecutionPlanService', ['createExecutionPlan']);
-    executionPlanServiceSpy.createExecutionPlan.and.returnValue(of(undefined));
 
     await TestBed.configureTestingModule({
-      declarations: [ExecutionPlanModalComponent],
-      imports: [
-        ReactiveFormsModule,
-        HttpClientTestingModule
-      ],
+      declarations: [ ExecutionPlanModalComponent ],
+      imports: [ ReactiveFormsModule ],
       providers: [
-        FormBuilder,
-        { provide: TemplateService, useValue: templateServiceSpy },
-        { provide: ExecutionPlanService, useValue: executionPlanServiceSpy }
+        { provide: TemplateService, useValue: templateService }
       ]
     }).compileComponents();
 
     templateService = TestBed.inject(TemplateService) as jasmine.SpyObj<TemplateService>;
-    executionPlanService = TestBed.inject(ExecutionPlanService) as jasmine.SpyObj<ExecutionPlanService>;
   });
 
   beforeEach(() => {
@@ -66,75 +48,94 @@ describe('ExecutionPlanModalComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should initialize with an empty form', () => {
-    expect(component.planForm.get('templateId')?.value).toBeNull();
-    expect(component.planForm.valid).toBeFalse();
+  describe('Form Initialization', () => {
+    it('should initialize form with templateId control', () => {
+      expect(component.planForm.get('templateId')).toBeTruthy();
+      expect(component.planForm.get('templateId')?.validator).toBeTruthy();
+    });
+
+    it('should load templates on init', () => {
+      let templates: Template[] = [];
+      component.templates$.subscribe(t => templates = t);
+      expect(templates).toEqual(mockTemplates);
+    });
   });
 
-  it('should initialize with empty selected shipments', () => {
-    expect(component.selectedShipments).toEqual([]);
+  describe('Button State', () => {
+    it('should disable create button when form is invalid', () => {
+      component.selectedShipments = mockShipments;
+      fixture.detectChanges();
+      
+      const button = fixture.debugElement.query(By.css('button.btn-primary'));
+      expect(button.nativeElement.disabled).toBeTrue();
+      
+      component.planForm.patchValue({ templateId: 1 });
+      fixture.detectChanges();
+      expect(button.nativeElement.disabled).toBeFalse();
+    });
+
+    it('should disable create button when no shipments are selected', () => {
+      component.selectedShipments = [];
+      component.planForm.patchValue({ templateId: 1 });
+      fixture.detectChanges();
+      
+      const button = fixture.debugElement.query(By.css('button.btn-primary'));
+      expect(button.nativeElement.disabled).toBeTrue();
+    });
+
+    it('should disable create button when buttonDisabled is true', () => {
+      component.selectedShipments = mockShipments;
+      component.planForm.patchValue({ templateId: 1 });
+      component.buttonDisabled = true;
+      fixture.detectChanges();
+      
+      const button = fixture.debugElement.query(By.css('button.btn-primary'));
+      expect(button.nativeElement.disabled).toBeTrue();
+    });
   });
 
-  it('should have templates$ observable with mock data', async () => {
-    const templates = await firstValueFrom(component.templates$);
-    expect(templates).toEqual(mockTemplates);
+  describe('Button Text and Spinner', () => {
+    it('should show loading spinner when buttonDisabled is true', () => {
+      component.buttonDisabled = true;
+      fixture.detectChanges();
+      
+      const spinner = fixture.debugElement.query(By.css('.spinner-border'));
+      const loadingText = fixture.debugElement.query(By.css('button.btn-primary')).nativeElement.textContent;
+      
+      expect(spinner).toBeTruthy();
+      expect(loadingText.trim()).toBe('Loading...');
+    });
+
+    it('should show "Create Plan" text when buttonDisabled is false', () => {
+      component.buttonDisabled = false;
+      fixture.detectChanges();
+      
+      const spinner = fixture.debugElement.query(By.css('.spinner-border'));
+      const buttonText = fixture.debugElement.query(By.css('button.btn-primary')).nativeElement.textContent;
+      
+      expect(spinner).toBeFalsy();
+      expect(buttonText.trim()).toBe('Create Plan');
+    });
   });
 
-  it('should emit close event when onClose is called', () => {
-    const closeSpy = spyOn(component.close, 'emit');
-    component.onClose();
-    expect(closeSpy).toHaveBeenCalled();
-  });
+  describe('Events', () => {
+    it('should emit createPlanRequested with correct data when form is submitted', () => {
+      const createPlanSpy = spyOn(component.createPlanRequested, 'emit');
+      component.selectedShipments = mockShipments;
+      component.planForm.patchValue({ templateId: 1 });
+      
+      component.createExecutionPlan();
+      
+      expect(createPlanSpy).toHaveBeenCalledWith({
+        templateId: 1,
+        shipmentIds: [1, 2]
+      });
+    });
 
-  it('should not create execution plan when form is invalid', () => {
-    component.selectedShipments = mockShipments;
-    component.createExecutionPlan();
-    expect(executionPlanService.createExecutionPlan).not.toHaveBeenCalled();
-  });
-
-  it('should not create execution plan when no shipments are selected', () => {
-    component.planForm.patchValue({ templateId: 1 });
-    component.createExecutionPlan();
-    expect(executionPlanService.createExecutionPlan).not.toHaveBeenCalled();
-  });
-
-  it('should create execution plan when form is valid and shipments are selected', () => {
-    // Given
-    component.selectedShipments = mockShipments;
-    component.planForm.patchValue({ templateId: 1 });
-
-    // When
-    component.createExecutionPlan();
-
-    // Then
-    expect(executionPlanService.createExecutionPlan).toHaveBeenCalledWith(
-      [mockShipments[0].id],
-      1
-    );
-  });
-
-  it('should emit planCreated and close events on successful plan creation', () => {
-    // Given
-    const planCreatedSpy = spyOn(component.planCreated, 'emit');
-    const closeSpy = spyOn(component.close, 'emit');
-    component.selectedShipments = mockShipments;
-    component.planForm.patchValue({ templateId: 1 });
-
-    // When
-    component.createExecutionPlan();
-
-    // Then
-    expect(planCreatedSpy).toHaveBeenCalled();
-    expect(closeSpy).toHaveBeenCalled();
-  });
-
-  it('should clean up on destroy', () => {
-    const nextSpy = spyOn(component['destroy$'], 'next');
-    const completeSpy = spyOn(component['destroy$'], 'complete');
-
-    component.ngOnDestroy();
-
-    expect(nextSpy).toHaveBeenCalled();
-    expect(completeSpy).toHaveBeenCalled();
+    it('should emit close event when onClose is called', () => {
+      const closeSpy = spyOn(component.close, 'emit');
+      component.onClose();
+      expect(closeSpy).toHaveBeenCalled();
+    });
   });
 });

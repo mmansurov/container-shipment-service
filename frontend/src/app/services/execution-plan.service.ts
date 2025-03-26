@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
-import { ExecutionPlan } from '../models/execution-plan.model';
+import { BehaviorSubject, exhaustMap, Observable, Subject } from 'rxjs';
+import { CreateExecutionPlanRequest, ExecutionPlan } from '../models/execution-plan.model';
 import { environment } from '../../environments/environment';
 import { LoadingState } from '../models/loading-state.model';
 
@@ -11,8 +10,13 @@ import { LoadingState } from '../models/loading-state.model';
 })
 export class ExecutionPlanService {
   private apiUrl = `${environment.apiUrl}/execution-plans`;
-  private executionPlansSubject = new BehaviorSubject<LoadingState<ExecutionPlan>>({ data: [], loading: true });
+  private executionPlansSubject = new BehaviorSubject<LoadingState<ExecutionPlan>>({data: [], loading: true});
+  private createPlanRequestSubject = new Subject<CreateExecutionPlanRequest>();
+
   executionPlansState$: Observable<LoadingState<ExecutionPlan>> = this.executionPlansSubject.asObservable();
+  planCreated$: Observable<ExecutionPlan> = this.createPlanRequestSubject.pipe(
+    exhaustMap(request => this.http.post<ExecutionPlan>(this.apiUrl, request)),
+  );
 
   constructor(private http: HttpClient) {
     this.loadExecutionPlans();
@@ -20,13 +24,11 @@ export class ExecutionPlanService {
 
   loadExecutionPlans() {
     this.http.get<ExecutionPlan[]>(this.apiUrl).subscribe(
-      plans => this.executionPlansSubject.next({ data: plans, loading: false }),
+      plans => this.executionPlansSubject.next({data: plans, loading: false}),
     );
   }
 
-  createExecutionPlan(shipmentIds: number[], templateId: number): Observable<ExecutionPlan> {
-    return this.http.post<ExecutionPlan>(this.apiUrl, {shipmentIds, templateId}).pipe(
-      tap(() => this.loadExecutionPlans())
-    );
+  createExecutionPlan(request: CreateExecutionPlanRequest): void {
+    this.createPlanRequestSubject.next(request);
   }
 }
